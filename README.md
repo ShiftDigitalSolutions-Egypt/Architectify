@@ -31,6 +31,8 @@ Architectify is a powerful CLI tool that automatically restructures your Flutter
 | 🤖 **AI-Powered** | Uses GPT-4o-mini to intelligently analyze and classify your code |
 | 📐 **5 Design Patterns** | Choose from Clean Architecture, MVVM, MVC, BLoC, or Feature-First |
 | ⚡ **Auto-Generation** | Creates missing entities, models, repositories, and interfaces |
+| 📖 **User Story Import** | Generate complete features from user stories/requirements |
+| 🔑 **Persistent API Key** | Save your API key once, use forever (until you reset it) |
 | 💉 **Injectable Support** | Handles `@Injectable(as: Repository)` annotations automatically |
 | 🔗 **Smart Inheritance** | Sets up proper model-entity inheritance relationships |
 | 📦 **Batch Processing** | Processes entire feature folders at once |
@@ -206,23 +208,30 @@ architectify <feature_folder_path> [options]
 | `--help` | `-h` | Show usage information |
 | `--list-patterns` | `-l` | List all available design patterns with descriptions |
 | `--pattern` | `-p` | Design pattern to use (1-5 or name) |
-| `--api-key` | `-k` | OpenAI API key |
+| `--api-key` | `-k` | OpenAI API key (overrides saved key) |
+| `--story` | `-s` | User story text to generate complete feature |
+| `--reset-key` | | Clear saved API key and configuration |
 
 ### Examples
 
 ```bash
-# Use Clean Architecture (default)
-architectify ./lib/features/auth -k sk-xxx
+# First run - prompts for API key and saves it
+architectify ./lib/features/auth
 
-# Use MVVM pattern
-architectify ./lib/features/auth -p 2 -k sk-xxx
+# Generate feature from user story
+architectify ./lib/features/auth -s "As a user, I want to login with email and password"
+
+# Use MVVM pattern with user story
+architectify ./lib/features/profile -p mvvm -s "As a user, I want to view and edit my profile"
 
 # Use pattern by name
-architectify ./lib/features/auth -p mvvm -k sk-xxx
-
-# Use environment variable for API key
-export OPENAI_API_KEY=sk-xxx
 architectify ./lib/features/auth -p bloc
+
+# Reset saved API key
+architectify --reset-key
+
+# Override saved key temporarily
+architectify ./lib/features/auth -k sk-different-key
 
 # List all available patterns
 architectify -l
@@ -293,9 +302,34 @@ architectify -l
 
 ## 🔧 Configuration
 
-### Environment Variable
+### Persistent API Key (Recommended)
 
-Set your OpenAI API key as an environment variable:
+On first run, Architectify will prompt for your API key and save it:
+
+```
+🔑 First-time setup detected!
+   Please enter your OpenAI API key: sk-xxx
+
+✅ API key saved to ~/.architectify/config.json
+```
+
+Your key is stored in `~/.architectify/config.json` and persists across sessions.
+
+**Reset your saved key:**
+```bash
+architectify --reset-key
+```
+
+### API Key Priority
+
+| Priority | Source | Description |
+|----------|--------|-------------|
+| 1 (Highest) | `--api-key` / `-k` | Command line argument |
+| 2 | `~/.architectify/config.json` | Saved configuration |
+| 3 | `OPENAI_API_KEY` | Environment variable |
+| 4 (Lowest) | Interactive prompt | First-run setup |
+
+### Environment Variable (Alternative)
 
 **Linux/macOS:**
 ```bash

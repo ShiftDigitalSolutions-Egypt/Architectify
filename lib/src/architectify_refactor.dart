@@ -11,12 +11,14 @@ class ArchitectifyRefactor {
   final String featureDirPath;
   final String apiKey;
   final DesignPattern pattern;
+  final String? userStory;
   late final Directory featureDir;
 
   ArchitectifyRefactor({
     required this.featureDirPath,
     required this.apiKey,
     required this.pattern,
+    this.userStory,
   }) {
     featureDir = Directory(featureDirPath);
     OpenAI.apiKey = apiKey;
@@ -102,12 +104,33 @@ class ArchitectifyRefactor {
 
     final folderList = pattern.folderStructure.map((f) => '  - $f').join('\n');
 
+    // Build user story section if provided
+    final storySection = userStory != null && userStory!.isNotEmpty
+        ? '''
+USER STORY / REQUIREMENTS:
+$userStory
+
+Based on this user story, generate a complete feature implementation including:
+- All necessary entities and models
+- Repository interfaces and implementations
+- Use cases for each user action
+- State management (BLoC/Cubit/ViewModel as appropriate)
+- Proper folder organization
+
+'''
+        : '';
+
+    // Build existing files section
+    final existingFilesSection = filesMap.isEmpty
+        ? 'No existing files - this is a new feature. Generate all necessary files from scratch.\n'
+        : '''User provided the following existing files:
+$filesContent
+''';
+
     final prompt = '''
 ${pattern.aiPromptTemplate}
 
-User provided the following files:
-$filesContent
-
+$storySection$existingFilesSection
 Target folder structure:
 $folderList
 

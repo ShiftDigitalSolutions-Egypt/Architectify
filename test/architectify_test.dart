@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:architectify/architectify.dart';
 import 'package:test/test.dart';
 
@@ -55,6 +56,109 @@ void main() {
       expect(pattern.folderStructure, contains('models'));
       expect(pattern.folderStructure, contains('views'));
       expect(pattern.folderStructure, contains('viewmodels'));
+    });
+  });
+
+  group('ConfigService', () {
+    // Use a temp directory for testing to avoid affecting real config
+    late String originalHome;
+    late Directory tempDir;
+
+    setUp(() {
+      // Create a temp directory for testing
+      tempDir = Directory.systemTemp.createTempSync('architectify_test_');
+      originalHome = Platform.isWindows
+          ? Platform.environment['USERPROFILE'] ?? ''
+          : Platform.environment['HOME'] ?? '';
+    });
+
+    tearDown(() {
+      // Clean up temp directory
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('isValidApiKeyFormat validates correctly', () {
+      // Valid format
+      expect(ConfigService.isValidApiKeyFormat('sk-1234567890abcdefghijklmn'), isTrue);
+      expect(ConfigService.isValidApiKeyFormat('sk-proj-longapikeywithmanycharacters'), isTrue);
+
+      // Invalid format
+      expect(ConfigService.isValidApiKeyFormat(''), isFalse);
+      expect(ConfigService.isValidApiKeyFormat('api-key'), isFalse);
+      expect(ConfigService.isValidApiKeyFormat('sk-short'), isFalse);
+      expect(ConfigService.isValidApiKeyFormat('invalid-key-format'), isFalse);
+    });
+
+    test('configDir returns correct path format', () {
+      final configDir = ConfigService.configDir;
+      expect(configDir, isNotEmpty);
+      expect(configDir, contains('.architectify'));
+    });
+
+    test('configFilePath includes config.json', () {
+      final configFilePath = ConfigService.configFilePath;
+      expect(configFilePath, contains('config.json'));
+      expect(configFilePath, contains('.architectify'));
+    });
+  });
+
+  group('ArchitectifyRefactor', () {
+    test('constructor initializes with required parameters', () {
+      final refactor = ArchitectifyRefactor(
+        featureDirPath: './test_feature',
+        apiKey: 'sk-test-api-key-12345678901234',
+        pattern: DesignPatterns.cleanArchitecture,
+      );
+
+      expect(refactor.featureDirPath, equals('./test_feature'));
+      expect(refactor.apiKey, equals('sk-test-api-key-12345678901234'));
+      expect(refactor.pattern.name, equals('Clean Architecture'));
+      expect(refactor.userStory, isNull);
+    });
+
+    test('constructor accepts optional userStory', () {
+      final refactor = ArchitectifyRefactor(
+        featureDirPath: './test_feature',
+        apiKey: 'sk-test-api-key-12345678901234',
+        pattern: DesignPatterns.mvvm,
+        userStory: 'As a user, I want to login with email',
+      );
+
+      expect(refactor.userStory, equals('As a user, I want to login with email'));
+      expect(refactor.pattern.name, equals('MVVM (Model-View-ViewModel)'));
+    });
+
+    test('works with all design patterns', () {
+      for (final pattern in DesignPatterns.all) {
+        final refactor = ArchitectifyRefactor(
+          featureDirPath: './test_feature',
+          apiKey: 'sk-test-api-key-12345678901234',
+          pattern: pattern,
+        );
+
+        expect(refactor.pattern, equals(pattern));
+      }
+    });
+
+    test('featureDir is initialized from featureDirPath', () {
+      final refactor = ArchitectifyRefactor(
+        featureDirPath: './my_feature',
+        apiKey: 'sk-test-api-key-12345678901234',
+        pattern: DesignPatterns.bloc,
+      );
+
+      expect(refactor.featureDir.path, contains('my_feature'));
+    });
+  });
+
+  group('Integration', () {
+    test('all exports are accessible from package', () {
+      // These should not throw - verifying exports work
+      expect(DesignPatterns, isNotNull);
+      expect(DesignPatterns.all, isNotEmpty);
+      expect(ConfigService, isNotNull);
     });
   });
 }
