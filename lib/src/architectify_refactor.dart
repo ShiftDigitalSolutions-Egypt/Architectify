@@ -74,12 +74,16 @@ class ArchitectifyRefactor {
       }
     }
 
-    if (filesMap.isEmpty) {
+    // If no files found AND no user story, we can't do anything
+    if (filesMap.isEmpty && (userStory == null || userStory!.isEmpty)) {
       print('⚠️ No Dart files found in the feature folder');
       return;
     }
 
     print('🔄 Processing ${filesMap.length} files with AI...');
+    if (userStory != null && userStory!.isNotEmpty) {
+      print('   (Generating from User Story)');
+    }
 
     // Send prompt to AI for full pipeline refactor
     final generatedFiles = await _generateAllMissingAndFixFiles(filesMap);
