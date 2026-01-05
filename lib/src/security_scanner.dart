@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dart_openai/dart_openai.dart';
 import 'package:path/path.dart' as p;
@@ -13,7 +14,10 @@ class SecurityScanner {
     OpenAI.apiKey = apiKey;
   }
 
-  Future<void> scan(Directory dir) async {
+  String? _lastReport;
+  Map<String, String>? _lastFileContext;
+
+  Future<String?> scan(Directory dir) async {
     print('');
     print('🛡️  Starting Security Scan...');
     print('   Target: ${dir.path}');
@@ -22,20 +26,180 @@ class SecurityScanner {
 
     if (!dir.existsSync()) {
       print('❌ Error: Directory not found: ${dir.path}');
-      return;
+      return null;
     }
 
     // 1. Gather all files
     final filesContent = await _gatherFiles(dir);
     if (filesContent.isEmpty) {
       print('⚠️  No relevant files found to scan.');
-      return;
+      return null;
     }
+
+    _lastFileContext = filesContent;
 
     print('📦 Analyzing ${filesContent.length} files...');
 
     // 2. Send to AI
-    await _analyzeWithAI(filesContent);
+    _lastReport = await _analyzeWithAI(filesContent);
+    return _lastReport;
+  }
+
+  Future<void> fixIssues(Directory dir) async {
+    if (_lastReport == null || _lastFileContext == null) {
+      print('❌ No scan report available to fix. Run scan() first.');
+      return;
+    }
+
+    print('🔧 Attempting to auto-fix security issues with $model...');
+    print('   (This process implements RASP principles and fixes vulnerabilities)');
+    print('');
+
+    // RASP-focused prompt
+    final prompt = '''
+You are an expert Security Engineer specializing in RASP (Runtime Application Self-Protection) and secure coding. state-of-the-art security fixes.
+Your task is to FIX the security vulnerabilities identified in the previous report and IMPLEMENT RASP controls where applicable.
+
+REPORT TO FIX:
+$_lastReport
+
+CODEBASE CONTEXT:
+${_lastFileContext!.entries.map((e) => '--- FILE: ${e.key} ---\n${e.value}').join('\n\n')}
+
+INSTRUCTIONS:
+1. Apply code fixes for the Critical and High severity issues mentioned in the report.
+2. **IMPLEMENT RASP CONTROLS**:
+   - Add checks for Root/Jailbreak detection if missing.
+   - Add checks for Debugger detection if missing.
+   - Suggest or add necessary Flutter packages (e.g., `flutter_jailbreak_detection`, `freerasp`) in `pubspec.yaml` if needed.
+3. Return the FULL content of the modified files.
+4. If a file needs no changes, DO NOT include it in the response.
+5. If you add dependencies, include the updated `pubspec.yaml`.
+
+FORMAT:
+Return a valid JSON object where keys are the file paths (relative path as seen in context) and values are the NEW full content of the file.
+Example:
+{
+  "lib/main.dart": "void main() { ... }",
+  "pubspec.yaml": "name: ... dependencies: ..."
+}
+
+IMPORTANT: Return ONLY the raw JSON string. Do not wrap in markdown or code blocks.
+''';
+
+    try {
+      final result = await OpenAI.instance.chat.create(
+        model: model,
+        messages: [
+          OpenAIChatCompletionChoiceMessageModel(
+            role: OpenAIChatMessageRole.user,
+            content: [
+              OpenAIChatCompletionChoiceMessageContentItemModel.text(prompt)
+            ],
+          )
+        ],
+        temperature: 0.2,
+      );
+
+      var jsonResponse = result.choices.first.message.content?.first.text?.trim();
+      
+      if (jsonResponse == null) {
+        print('❌ Failed to generate fixes.');
+        return;
+      }
+
+      // Strip markdown code blocks if present
+      if (jsonResponse.startsWith('```')) {
+        jsonResponse = jsonResponse.replaceAll(RegExp(r'^```[a-z]*\n'), '').replaceAll(RegExp(r'\n```$'), '');
+      }
+
+      // Fix common JSON escaping issues (like \$ which is invalid in JSON but used by AI for Dart)
+      jsonResponse = jsonResponse.replaceAll(r'\$', r'$');
+      
+      print('DEBUG: Raw JSON Response: $jsonResponse');
+
+      // Let's rely on dart:convert
+      final Map<String, dynamic> fixes = jsonDecode(jsonResponse);
+
+      if (fixes.isEmpty) {
+        print('⚠️  No fixes generated.');
+        return;
+      }
+
+      print('📝 Applying fixes to ${fixes.length} files...');
+
+      for (final entry in fixes.entries) {
+        final filePath = entry.key;
+        final newContent = entry.value as String;
+        
+        final file = File(p.join(dir.path, filePath));
+        if (await file.exists()) {
+           await file.writeAsString(newContent);
+           print('   ✅ Fixed: $filePath');
+        } else {
+           // Handle new files (e.g. if RASP needs a new utility class)
+           await file.create(recursive: true);
+           await file.writeAsString(newContent);
+           print('   ✨ Created: $filePath');
+        }
+      }
+
+      print('');
+      print('✅ Auto-fix complete!');
+
+    } catch (e) {
+      print('❌ Fix application failed: $e');
+    }
+  }
+
+  Future<void> compareReports(String oldReport, String newReport) async {
+    print('⚖️  Comparing security reports...');
+    
+    final prompt = '''
+You are a Security Auditor. Compare the following two security reports (Before Fixes vs After Fixes) and provide a diff summary.
+
+OLD REPORT:
+$oldReport
+
+NEW REPORT:
+$newReport
+
+INSTRUCTIONS:
+1. Identify which Critical/High issues were resolved.
+2. Identify if any new issues were introduced.
+3. explicitly mention added RASP protections (Root detection, Anti-tampering, etc.).
+4. Provide a concise summary in Markdown.
+
+Respond with the Markdown summary ONLY.
+''';
+
+    try {
+       final result = await OpenAI.instance.chat.create(
+        model: model,
+        messages: [
+          OpenAIChatCompletionChoiceMessageModel(
+            role: OpenAIChatMessageRole.user,
+            content: [
+              OpenAIChatCompletionChoiceMessageContentItemModel.text(prompt)
+            ],
+          )
+        ],
+        temperature: 0.2,
+      );
+
+      final comparison = result.choices.first.message.content?.first.text?.trim() ?? 'No comparison generated.';
+      
+      print('');
+      print('📉 Report Comparison');
+      print('=========================');
+      print('');
+      print(comparison);
+      print('');
+      print('=========================');
+
+    } catch (e) {
+      print('❌ Comparison failed: $e');
+    }
   }
 
   Future<Map<String, String>> _gatherFiles(Directory dir) async {
@@ -75,12 +239,9 @@ class SecurityScanner {
     return filesMap;
   }
 
-  Future<void> _analyzeWithAI(Map<String, String> filesMap) async {
+  Future<String> _analyzeWithAI(Map<String, String> filesMap) async {
     final fileContext = filesMap.entries.map((e) => '--- FILE: ${e.key} ---\n${e.value}').join('\n\n');
     
-    // Chunking logic could go here if files are too big, but for now we'll assume they fit given the exclusion of large files.
-    // GPT-4o has a large context window (128k), so we can fit quite a bit.
-
     final prompt = '''
 You are an expert Security Engineer and Code Auditor. Your task is to analyze the provided codebase for security vulnerabilities, best practice violations, and potential risks.
 
@@ -94,6 +255,7 @@ INSTRUCTIONS:
    - Hardcoded secrets or keys
    - Logic flaws that could be exploited
    - Flutter/Dart specific security best practices
+   - **RASP COMPLIANCE**: Check for absence of Root Detection, Jailbreak Detection, or Anti-Tampering mechanisms. Mark as High/Medium risk if missing for sensitive apps.
 
 2. Provide a detailed report in Markdown format.
 3. Structure the report as follows:
@@ -135,9 +297,12 @@ Respond with the Markdown report ONLY.
       print('');
       print('=========================');
       print('✅ Scan Complete');
+      
+      return report;
 
     } catch (e) {
       print('❌ Analysis failed: $e');
+      return 'Analysis Failed: $e';
     }
   }
 }

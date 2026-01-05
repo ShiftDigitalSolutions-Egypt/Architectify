@@ -65,7 +65,27 @@ void main(List<String> args) async {
     
     final targetDir = Directory(results.rest.first);
     final scanner = SecurityScanner(apiKey: apiKey, model: model);
-    await scanner.scan(targetDir);
+    final report = await scanner.scan(targetDir);
+
+    if (report != null) {
+      // Prompt for auto-fix
+      print('');
+      stdout.write('🔧 Do you want to attempt to automatically fix these issues with AI? (y/N): ');
+      final fixConfirm = stdin.readLineSync()?.trim().toLowerCase();
+      
+      if (fixConfirm == 'y' || fixConfirm == 'yes') {
+        await scanner.fixIssues(targetDir);
+
+        // Re-scan
+        print('');
+        print('🔄 Re-scanning to verify fixes...');
+        final newReport = await scanner.scan(targetDir);
+
+        if (newReport != null) {
+          await scanner.compareReports(report, newReport);
+        }
+      }
+    }
     return;
   }
 
