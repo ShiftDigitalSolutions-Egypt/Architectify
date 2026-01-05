@@ -181,7 +181,7 @@ dart pub global activate architectify
 ### From Source
 
 ```bash
-git clone https://github.com/Abdelmonem-wagih/architectify.git
+git clone https://github.com/ShiftDigitalSolutions-Egypt/architectify.git
 cd architectify
 dart pub global activate --source path .
 ```
@@ -368,16 +368,16 @@ dart test
 
 ## 👨‍💻 Author
 
-**Abdelmonem Wagih**
+**Shift Digital Solutions Egypt**
 - 📧 Email: [abdowagih38@gmail.com](mailto:abdowagih38@gmail.com)
-- 🐙 GitHub: [@Abdelmonem-wagih](https://github.com/Abdelmonem-wagih)
+- 🐙 GitHub: [@ShiftDigitalSolutions-Egypt](https://github.com/ShiftDigitalSolutions-Egypt)
 
 ---
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/Abdelmonem-wagih/architectify)
-- [Issue Tracker](https://github.com/Abdelmonem-wagih/architectify/issues)
+- [GitHub Repository](https://github.com/ShiftDigitalSolutions-Egypt/architectify)
+- [Issue Tracker](https://github.com/ShiftDigitalSolutions-Egypt/architectify/issues)
 - [Changelog](CHANGELOG.md)
 
 ---
