@@ -3,7 +3,7 @@ description: >-
   AI-powered CLI tool that automatically restructures Flutter projects into 
   Clean Architecture or other design patterns. Uses GPT-4o-mini for intelligent 
   file classification and generates missing entities, models, repositories, and use cases.
-version: 2.0.0
+version: 2.1.0
 homepage: "https://github.com/Abdelmonem-wagih/architectify"
 repository: "https://github.com/Abdelmonem-wagih/architectify"
 issue_tracker: "https://github.com/Abdelmonem-wagih/architectify/issues"

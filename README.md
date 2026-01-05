@@ -1,9 +1,9 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Dart-%3E%3D3.0.0-blue?logo=dart" alt="Dart SDK">
   <img src="https://img.shields.io/badge/Flutter-Compatible-02569B?logo=flutter" alt="Flutter">
-  <img src="https://img.shields.io/badge/AI-GPT--4o--mini-412991?logo=openai" alt="OpenAI">
+  <img src="https://img.shields.io/badge/AI-GPT--4o-412991?logo=openai" alt="OpenAI">
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/Version-2.0.0-orange" alt="Version">
+  <img src="https://img.shields.io/badge/Version-2.1.0-orange" alt="Version">
 </p>
 
 <h1 align="center">🏗️ Architectify</h1>
@@ -22,13 +22,14 @@
 
 ## ✨ What is Architectify?
 
-Architectify is a powerful CLI tool that automatically restructures your Flutter feature folders into your preferred architecture pattern. It uses **OpenAI GPT-4o-mini** to intelligently classify your Dart files and generates missing components like entities, repositories, and use cases.
+Architectify is a powerful CLI tool that automatically restructures your Flutter feature folders into your preferred architecture pattern. It uses **OpenAI GPT-4o** to intelligently classify your Dart files and generates missing components like entities, repositories, and use cases. It also includes a robust **Security Scanner** to identify vulnerabilities in your project.
 
 ### 🎯 Key Features
 
 | Feature | Description |
 |---------|-------------|
-| 🤖 **AI-Powered** | Uses GPT-4o-mini to intelligently analyze and classify your code |
+| 🤖 **AI-Powered** | Uses GPT-4o to intelligently analyze and classify your code |
+| 🛡️ **Security Scanner** | Scans your project for security vulnerabilities and dangerous dependencies |
 | 📐 **5 Design Patterns** | Choose from Clean Architecture, MVVM, MVC, BLoC, or Feature-First |
 | ⚡ **Auto-Generation** | Creates missing entities, models, repositories, and interfaces |
 | 📖 **User Story Import** | Generate complete features from user stories/requirements |
@@ -199,6 +200,7 @@ dart compile exe bin/architectify.dart -o architectify
 
 ```bash
 architectify <feature_folder_path> [options]
+architectify --scan <folder_path>
 ```
 
 ### Options
@@ -209,6 +211,8 @@ architectify <feature_folder_path> [options]
 | `--list-patterns` | `-l` | List all available design patterns with descriptions |
 | `--pattern` | `-p` | Design pattern to use (1-5 or name) |
 | `--api-key` | `-k` | OpenAI API key (overrides saved key) |
+| `--model` | `-m` | AI Model to use (default: gpt-4o) |
+| `--scan` | | Scan project for security vulnerabilities (requires folder path) |
 | `--story` | `-s` | User story text to generate complete feature |
 | `--reset-key` | | Clear saved API key and configuration |
 
@@ -232,6 +236,12 @@ architectify --reset-key
 
 # Override saved key temporarily
 architectify ./lib/features/auth -k sk-different-key
+
+# Check for security issues in your project
+architectify --scan .
+
+# Use a specific model (e.g., gpt-4o-mini to save costs)
+architectify ./lib/features/auth -m gpt-4o-mini
 
 # List all available patterns
 architectify -l

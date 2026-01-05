@@ -12,6 +12,7 @@ class ArchitectifyRefactor {
   final String apiKey;
   final DesignPattern pattern;
   final String? userStory;
+  final String model;
   late final Directory featureDir;
 
   ArchitectifyRefactor({
@@ -19,6 +20,7 @@ class ArchitectifyRefactor {
     required this.apiKey,
     required this.pattern,
     this.userStory,
+    this.model = 'gpt-4o',
   }) {
     featureDir = Directory(featureDirPath);
     OpenAI.apiKey = apiKey;
@@ -148,7 +150,7 @@ Respond with Dart code only.
 
     try {
       final result = await OpenAI.instance.chat.create(
-        model: 'gpt-4o-mini',
+        model: model,
         messages: [
           OpenAIChatCompletionChoiceMessageModel(
             role: OpenAIChatMessageRole.user,

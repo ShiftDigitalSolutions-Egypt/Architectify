@@ -9,7 +9,9 @@ void main(List<String> args) async {
     ..addFlag('reset-key', negatable: false, help: 'Clear saved API key and all configuration')
     ..addOption('pattern', abbr: 'p', help: 'Design pattern to use (1-5 or name)', defaultsTo: '1')
     ..addOption('api-key', abbr: 'k', help: 'OpenAI API key (overrides saved key)')
-    ..addOption('story', abbr: 's', help: 'User story text to generate feature from');
+    ..addOption('story', abbr: 's', help: 'User story text to generate feature from')
+    ..addOption('model', abbr: 'm', help: 'AI Model to use', defaultsTo: 'gpt-4o')
+    ..addFlag('scan', negatable: false, help: 'Scan project for security vulnerabilities');
 
   ArgResults results;
   try {
@@ -45,6 +47,25 @@ void main(List<String> args) async {
     print('❌ OpenAI API key is required!');
     print('');
     print('💡 Run the tool again to set up your API key');
+    return;
+  }
+
+  // Get selected model
+  final model = results['model'] as String;
+
+  // Handle Security Scan
+  if (results['scan'] as bool) {
+    // For scan, we need a target folder.
+    if (results.rest.isEmpty) {
+       print('❌ Error: Please provide a folder to scan');
+       print('');
+       _printUsage(parser);
+       return;
+    }
+    
+    final targetDir = Directory(results.rest.first);
+    final scanner = SecurityScanner(apiKey: apiKey, model: model);
+    await scanner.scan(targetDir);
     return;
   }
 
@@ -88,6 +109,7 @@ void main(List<String> args) async {
     apiKey: apiKey,
     pattern: pattern,
     userStory: userStory,
+    model: model,
   );
   await refactor.run();
 }
@@ -126,7 +148,7 @@ Future<String?> _promptForApiKey() async {
   print('');
   print('🔑 First-time setup detected!');
   print('');
-  print('   Architectify uses OpenAI GPT-4o-mini to intelligently refactor your code.');
+  print('   Architectify uses OpenAI GPT-4o to intelligently refactor your code.');
   print('   You can get an API key from: https://platform.openai.com/api-keys');
   print('');
   stdout.write('   Please enter your OpenAI API key: ');
