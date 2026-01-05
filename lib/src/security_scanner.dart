@@ -115,8 +115,7 @@ IMPORTANT: Return ONLY the raw JSON string. Do not wrap in markdown or code bloc
 
       // Fix common JSON escaping issues (like \$ which is invalid in JSON but used by AI for Dart)
       jsonResponse = jsonResponse.replaceAll(r'\$', r'$');
-      
-      print('DEBUG: Raw JSON Response: $jsonResponse');
+
 
       // Let's rely on dart:convert
       final Map<String, dynamic> fixes = jsonDecode(jsonResponse);
@@ -130,7 +129,13 @@ IMPORTANT: Return ONLY the raw JSON string. Do not wrap in markdown or code bloc
 
       for (final entry in fixes.entries) {
         final filePath = entry.key;
-        final newContent = entry.value as String;
+        var newContent = entry.value as String;
+
+        // SANITIZATION: Strip markdown code blocks from the file content itself
+        // The AI might return the content as "```dart\n...\n```" inside the JSON value
+        if (newContent.contains('```')) {
+           newContent = newContent.replaceAll(RegExp(r'^```[a-z]*\s*'), '').replaceAll(RegExp(r'\s*```$'), '');
+        }
         
         final file = File(p.join(dir.path, filePath));
         if (await file.exists()) {

@@ -11,7 +11,8 @@ void main(List<String> args) async {
     ..addOption('api-key', abbr: 'k', help: 'OpenAI API key (overrides saved key)')
     ..addOption('story', abbr: 's', help: 'User story text to generate feature from')
     ..addOption('model', abbr: 'm', help: 'AI Model to use', defaultsTo: 'gpt-4o')
-    ..addFlag('scan', negatable: false, help: 'Scan project for security vulnerabilities');
+    ..addFlag('scan', negatable: false, help: 'Scan project for security vulnerabilities')
+    ..addFlag('yes', abbr: 'y', negatable: false, help: 'Automatically confirm all prompts');
 
   ArgResults results;
   try {
@@ -68,12 +69,19 @@ void main(List<String> args) async {
     final report = await scanner.scan(targetDir);
 
     if (report != null) {
-      // Prompt for auto-fix
-      print('');
-      stdout.write('🔧 Do you want to attempt to automatically fix these issues with AI? (y/N): ');
-      final fixConfirm = stdin.readLineSync()?.trim().toLowerCase();
+      // Check for auto-confirm flag
+      final autoConfirm = results['yes'] as bool;
+      bool shouldFix = autoConfirm;
+
+      if (!shouldFix) {
+        // Prompt for auto-fix
+        print('');
+        stdout.write('🔧 Do you want to attempt to automatically fix these issues with AI? (y/N): ');
+        final fixConfirm = stdin.readLineSync()?.trim().toLowerCase();
+        shouldFix = fixConfirm == 'y' || fixConfirm == 'yes';
+      }
       
-      if (fixConfirm == 'y' || fixConfirm == 'yes') {
+      if (shouldFix) {
         await scanner.fixIssues(targetDir);
 
         // Re-scan

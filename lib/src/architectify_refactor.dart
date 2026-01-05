@@ -176,7 +176,12 @@ Respond with Dart code only.
         final path = match.group(1)!.trim();
         final content = match.group(2)!.trim();
         if (path.isNotEmpty && content.isNotEmpty) {
-          generatedFiles[path] = content;
+          var cleanContent = content;
+          // SANITIZATION: Strip markdown code blocks if the AI wrapped the file content
+          if (cleanContent.contains('```')) {
+             cleanContent = cleanContent.replaceAll(RegExp(r'^```[a-z]*\s*'), '').replaceAll(RegExp(r'\s*```$'), '');
+          }
+          generatedFiles[path] = cleanContent;
         }
       }
 
